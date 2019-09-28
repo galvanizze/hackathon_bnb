@@ -267,8 +267,15 @@ def fetch_txs():
 
 def fetch_trades():
     newest = db.session.query(Trade).order_by(Trade.date.desc()).first()
-    until_field = {'trade_id': newest.trade_id}
-    _fetch_new_items('get_trades', newest.date, until_field)
+
+    if newest:
+        until_field = {'trade_id': newest.trade_id}
+        newest_date = newest.date
+    else:
+        until_field = {'trade_id': 0}
+        newest_date = datetime(2010, 1, 1)
+
+    _fetch_new_items('get_trades', newest_date, until_field)
 
 
 def _fetch_new_items(method, since_date, until_field=None):
