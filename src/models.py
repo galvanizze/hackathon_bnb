@@ -54,6 +54,7 @@ class Trade(db.Model):
 
 class Token(db.Model):
     __tablename__ = "tokens"
+    id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(64))
     symbol = db.Column(db.String(64))
     original_symbol = db.Column(db.String(64))
@@ -63,6 +64,7 @@ class Token(db.Model):
 
 class Market(db.Model):
     __tablename__ = "markets"
+    id = db.Column(db.Integer(), primary_key=True)
     base_asset_symbol = db.Column(db.String(64))
     quote_asset_symbol = db.Column(db.String(64))
     list_price = db.Column(db.DECIMAL())

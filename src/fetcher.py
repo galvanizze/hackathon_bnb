@@ -24,49 +24,53 @@ class BinanceAPI(Service):
     page_offset_step = 1
 
     supported_requests = {
-        'get_txs': '/transactions?startTime={start_time}&endTime={end_time}&offset={offset}&limit={limit}',
+        'get_txs': '/transactions?address={address}&startTime={start_time}&endTime={end_time}'
+                   '&offset={offset}&limit={limit}',
         'get_trades': '/trades?startTime={start_time}&endTime={end_time}&offset={offset}&limit={limit}',
         'get_tokens': '/tokens?offset={offset}&limit={limit}',
         'get_markets': '/markets?offset={offset}&limit={limit}'
     }
 
-    # @set_default_args_values
-    # def get_txs(self, start_time, end_time, offset=None, limit=None):
-    #     response = self.request(
-    #         'get_txs',
-    #         start_time=start_time,
-    #         end_time=end_time,
-    #         offset=offset,
-    #         limit=limit
-    #     )
-    #
-    #     return [self.parse_tx(t) for t in response['tx']]
-    #
-    # def parse_tx(self, raw_tx):
-    #     return Tx(
-    #         block_height=int(raw_tx['blockHeight']),
-    #         code=int(raw_tx['code']),
-    #         data=raw_tx['data'],
-    #         from_address=raw_tx['fromAddr'],
-    #         order_id=raw_tx['orderId'],
-    #         date=datetime.strptime(raw_tx['timeStamp'], '%Y-%m-%dT%H:%M:%S.%fZ'),
-    #         to_address=raw_tx['toAddr'],
-    #         tx_age=int(raw_tx['txAge']),
-    #         tx_asset=raw_tx['txAsset'],
-    #         tx_fee=Decimal(raw_tx['txFee']),
-    #         tx_hash=raw_tx['txHash'],
-    #         tx_type=raw_tx['txType'],
-    #         value=Decimal(raw_tx['value']),
-    #         source=int(raw_tx['source']),
-    #         sequence=int(raw_tx['sequence']),
-    #         swap_id=raw_tx['swapId'],
-    #         proposal_id=raw_tx['proposalId']
-    #     )
+    @set_default_args_values
+    def get_txs(self, address, start_time, end_time, offset=None, limit=None):
+        response = self.request(
+            'get_txs',
+            with_rate_limit=False,
+            address=address,
+            start_time=start_time,
+            end_time=end_time,
+            offset=offset,
+            limit=limit
+        )
+
+        return [self.parse_tx(t) for t in response['tx']]
+
+    def parse_tx(self, raw_tx):
+        return Tx(
+            block_height=int(raw_tx['blockHeight']),
+            code=int(raw_tx['code']),
+            data=raw_tx['data'],
+            from_address=raw_tx['fromAddr'],
+            order_id=raw_tx['orderId'],
+            date=datetime.strptime(raw_tx['timeStamp'], '%Y-%m-%dT%H:%M:%S.%fZ'),
+            to_address=raw_tx['toAddr'],
+            tx_age=int(raw_tx['txAge']),
+            tx_asset=raw_tx['txAsset'],
+            tx_fee=Decimal(raw_tx['txFee']),
+            tx_hash=raw_tx['txHash'],
+            tx_type=raw_tx['txType'],
+            value=Decimal(raw_tx['value']),
+            source=int(raw_tx['source']),
+            sequence=int(raw_tx['sequence']),
+            swap_id=raw_tx['swapId'],
+            proposal_id=raw_tx['proposalId']
+        )
 
     @set_default_args_values
     def get_trades(self, start_time, end_time, offset=None, limit=None):
         response = self.request(
             'get_trades',
+            with_rate_limit=False,
             start_time=start_time,
             end_time=end_time,
             offset=offset,
@@ -98,14 +102,14 @@ class BinanceAPI(Service):
             sell_single_fee_asset=raw_trade['sellSingleFee'].split(':')[0],
             symbol=raw_trade['symbol'],
             tick_type=raw_trade['tickType'],
-            date=datetime.fromtimestamp(int(raw_trade['time']/1000.0), pytz.utc),
+            date=datetime.fromtimestamp(int(raw_trade['time']) / 1000.0, pytz.utc),
             trade_id=raw_trade['tradeId']
         )
 
     @set_default_args_values
     def get_tokens(self, offset=None, limit=None):
         response = self.request(
-            'get_tokens', offset=offset, limit=limit
+            'get_tokens', with_rate_limit=False, offset=offset, limit=limit
         )
 
         return [self.parse_token(t) for t in response]
@@ -122,7 +126,7 @@ class BinanceAPI(Service):
     @set_default_args_values
     def get_markets(self, offset=None, limit=None):
         response = self.request(
-            'get_markets', offset=offset, limit=limit
+            'get_markets', with_rate_limit=False, offset=offset, limit=limit
         )
 
         return [self.parse_token(m) for m in response]
@@ -171,6 +175,8 @@ class PaginatedRequest:
 
         self._stop_fetching = False
         while True:
+            print('processing items in {} round'.format(self.offset + 1))
+
             items = getattr(self.api, self.method)(
                 offset=self.offset, **self.method_kwargs
             )
@@ -214,8 +220,8 @@ class PaginatedRequest:
     def _filter_descending(self, items):
         if self.until_value:
             # remove all records after (and including) last value
-            last_idx = next((i for i, tx in enumerate(items)
-                             if tx[self.until_name] == self.until_value), None)
+            last_idx = next((i for i, item in enumerate(items)
+                             if getattr(item, self.until_name) == self.until_value), None)
             # idx can be 0
             if not (last_idx is None):
                 items = items[:last_idx]
@@ -235,8 +241,8 @@ class PaginatedRequest:
     def _filter_ascending(self, items):
         if self.until_value:
             # remove all records after (and including) first value
-            last_idx = next((i for i, tx in list(enumerate(items))[::-1]
-                             if tx[self.until_name] == self.until_value), None)
+            last_idx = next((i for i, item in list(enumerate(items))[::-1]
+                             if getattr(item, self.until_name) == self.until_value), None)
             # idx can be 0
             if not (last_idx is None):
                 items = items[(last_idx + 1):]
@@ -253,50 +259,81 @@ class PaginatedRequest:
         return items
 
 
-# def fetch_txs():
-#     init_date = datetime(2019, 8, 22, tzinfo=pytz.utc)
-#     until_date = init_date + relativedelta(months=3)
-#
-#     # TODO load last fetched item
-#
-#     bnb_api = BinanceAPI()
-#     paginated_request = PaginatedRequest(
-#         bnb_api,
-#         'get_txs',
-#         since=init_date,
-#         until=until_date,
-#         until_field={},
-#         # args for calling api method
-#         start_time=int(init_date.timestamp()),
-#         end_time=int(until_date.timestamp())
-#     )
-#
-#     for tx_list in paginated_request.fetch():
-#         db.session.add_all(tx_list)
-#         db.session.commit()
+def fetch_txs():
+    newest = db.session.query(Tx).order_by(Tx.date.desc()).first()
+    until_field = {'tx_hash': newest.tx_hash}
+    _fetch_new_items('get_txs', newest.date, until_field)
 
 
 def fetch_trades():
-    init_date = datetime(2019, 8, 22, tzinfo=pytz.utc)
-    until_date = init_date + relativedelta(months=3)
+    newest = db.session.query(Trade).order_by(Trade.date.desc()).first()
+    until_field = {'trade_id': newest.trade_id}
+    _fetch_new_items('get_trades', newest.date, until_field)
 
-    # TODO load last fetched item
+
+def _fetch_new_items(method, since_date, until_field=None):
+    # use date from last record, or set date of first tx in dex bnb exchange
+    if since_date:
+        since_ts = int(since_date.timestamp())
+    else:
+        since_ts = int(datetime(2019, 8, 22, tzinfo=pytz.utc).timestamp())
+
+    if not until_field:
+        until_field = {}
+
+    # TODO This will not work after 22.11., call paginated request in cycle
+    # max window for data is 3 months
+    until_ts = int((since_date + relativedelta(months=3)).timestamp())
 
     bnb_api = BinanceAPI()
     paginated_request = PaginatedRequest(
         bnb_api,
-        'get_trades',
-        since=init_date,
-        until=until_date,
-        until_field={},
+        method,
+        # do not use standard since and until dates
+        # they are used in api calling, see below
+        until_field=until_field,
         # args for calling api method
-        start_time=int(init_date.timestamp()),
-        end_time=int(until_date.timestamp())
+        start_time=since_ts,
+        end_time=until_ts
     )
 
-    for tx_list in paginated_request.fetch():
-        db.session.add_all(tx_list)
-        db.session.commit()
+    # from multiprocessing import Pool
+    # pool = Pool(2)
+    #
+    # items_generator = paginated_request.fetch()
+    # pool.imap(_save_items, items_generator)
+    # pool.close()
+
+    for items_list in paginated_request.fetch():
+        _save_items(items_list)
+
+
+def fetch_tokens():
+    bnb_api = BinanceAPI()
+    paginated_request = PaginatedRequest(bnb_api, 'get_tokens')
+
+    for items_list in paginated_request.fetch():
+        db.session.add_all(items_list)
+
+    Token.query.delete()
+    db.session.commit()
+
+
+def fetch_markets():
+    bnb_api = BinanceAPI()
+    paginated_request = PaginatedRequest(bnb_api, 'get_markets')
+
+    for items_list in paginated_request.fetch():
+        db.session.add_all(items_list)
+
+    Market.query.delete()
+    db.session.commit()
+
+
+def _save_items(items_list):
+    print('saving items')
+    db.session.add_all(items_list)
+    db.session.commit()
 
 
 if __name__ == '__main__':
