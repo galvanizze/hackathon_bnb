@@ -48,5 +48,23 @@ class Trade(db.Model):
     sell_single_fee_asset = db.Column(db.String(64))
     symbol = db.Column(db.String(64), index=True)
     tick_type = db.Column(db.String(64))
-    date = db.Column(db.DateTime(), index=True),
+    date = db.Column(db.DateTime(), index=True)
     trade_id = db.Column(db.String(64))
+
+
+class Token(db.Model):
+    __tablename__ = "tokens"
+    name = db.Column(db.String(64))
+    symbol = db.Column(db.String(64))
+    original_symbol = db.Column(db.String(64))
+    total_supply = db.Column(db.DECIMAL())
+    owner = db.Column(db.String(64))
+
+
+class Market(db.Model):
+    __tablename__ = "markets"
+    base_asset_symbol = db.Column(db.String(64))
+    quote_asset_symbol = db.Column(db.String(64))
+    list_price = db.Column(db.DECIMAL())
+    tick_size = db.Column(db.DECIMAL())
+    lot_size = db.Column(db.DECIMAL())

@@ -1,4 +1,4 @@
-from src.models import Tx, Trade, db
+from src.models import Tx, Trade, Token, Market, db
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -26,6 +26,8 @@ class BinanceAPI(Service):
     supported_requests = {
         'get_txs': '/transactions?startTime={start_time}&endTime={end_time}&offset={offset}&limit={limit}',
         'get_trades': '/trades?startTime={start_time}&endTime={end_time}&offset={offset}&limit={limit}',
+        'get_tokens': '/tokens?offset={offset}&limit={limit}',
+        'get_markets': '/markets?offset={offset}&limit={limit}'
     }
 
     # @set_default_args_values
@@ -98,6 +100,40 @@ class BinanceAPI(Service):
             tick_type=raw_trade['tickType'],
             date=datetime.fromtimestamp(int(raw_trade['time']/1000.0), pytz.utc),
             trade_id=raw_trade['tradeId']
+        )
+
+    @set_default_args_values
+    def get_tokens(self, offset=None, limit=None):
+        response = self.request(
+            'get_tokens', offset=offset, limit=limit
+        )
+
+        return [self.parse_token(t) for t in response]
+
+    def parse_token(self, raw_token):
+        return Token(
+            name=raw_token['name'],
+            symbol=raw_token['symbol'],
+            original_symbol=raw_token['original_symbol'],
+            total_supply=Decimal(raw_token['total_supply']),
+            owner=raw_token['owner']
+        )
+
+    @set_default_args_values
+    def get_markets(self, offset=None, limit=None):
+        response = self.request(
+            'get_markets', offset=offset, limit=limit
+        )
+
+        return [self.parse_token(m) for m in response]
+
+    def parse_market(self, raw_market):
+        return Market(
+            base_asset_symbol=raw_market['base_asset_symbol'],
+            quote_asset_symbol=raw_market['quote_asset_symbol'],
+            list_price=Decimal(raw_market['list_price']),
+            tick_size=Decimal(raw_market['tick_size']),
+            lot_size=Decimal(raw_market['lot_size'])
         )
 
 
