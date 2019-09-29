@@ -10,14 +10,23 @@ from src.models import Trade, OHLC
 """Fetching OHLC from trades and api."""
 
 
-def generate_ohlc_from_trades(start_date):
+def generate_ohlc():
+    start_date = datetime(2019, 8, 22)
+
+    # first get coingecko data
+    cg_ohlc = save_ohlc_from_cg(start_date)
+    generate_ohlc_from_trades(start_date, cg_ohlc)
+
+
+def generate_ohlc_from_trades(start_date, cg_ohlc):
     d = start_date
     while d <= datetime.now():
-        generate_daily_ohlc_from_trades(d)
+        daily_cg_ohlc = [o for o in cg_ohlc if o.date.date() == d.date()]
+        generate_daily_ohlc_from_trades(d, daily_cg_ohlc)
         d += timedelta(days=1)
 
 
-def generate_daily_ohlc_from_trades(date):
+def generate_daily_ohlc_from_trades(date, cg_ohlc):
     date_low, date_high = _get_date_range(date)
     trades = db.session.query(Trade).filter(
         and_(Trade.date < date_high, Trade.date >= date_low)).all()
@@ -29,15 +38,37 @@ def generate_daily_ohlc_from_trades(date):
         sub_trades = [t for t in trades if t.symbol == symbol]
         sorted_trades = sorted(sub_trades, key=lambda k: k.date)
 
+        _base = symbol.split('_')[0]
+        _quote = symbol.split('_')[1]
+        _open = sorted_trades[0].price
+        _max = max(sorted_trades, key=lambda k: k.date).price
+        _min = min(sorted_trades, key=lambda k: k.date).price
+        _close = sorted_trades[-1].price
+
         ohlc.append(OHLC(
-            base_asset=symbol.split('_')[0],
-            quote_asset=symbol.split('_')[1],
+            base_asset=_base,
+            quote_asset=_quote,
             date=date,
-            open=sorted_trades[0].price,
-            high=max(sorted_trades, key=lambda k: k.date).price,
-            low=min(sorted_trades, key=lambda k: k.date).price,
-            close=sorted_trades[-1].price
+            open=_open,
+            high=_max,
+            low=_min,
+            close=_close
         ))
+
+        # create OHLC from CG currencies
+        if _base == 'BNB':
+            continue
+
+        for cg_o in cg_ohlc:
+            ohlc.append(OHLC(
+                base_asset=_base,
+                quote_asset=cg_o.quote_asset,
+                date=date,
+                open=_open * cg_o.close,
+                high=_max * cg_o.close,
+                low=_min * cg_o.close,
+                close=_close * cg_o.close
+            ))
 
     db.session.add_all(ohlc)
     db.session.commit()
@@ -79,6 +110,8 @@ def save_ohlc_from_cg(start_date, to_symbols=None):
     db.session.add_all(ohlc)
     db.session.commit()
 
+    return ohlc
+
 
 def get_cg_coin_history(currency_id, date):
     formatted_date = date.strftime('%d-%m-%Y')
@@ -93,6 +126,4 @@ def get_cg_coin_history(currency_id, date):
 
 
 if __name__ == '__main__':
-    start_date = datetime(2019, 8, 22)
-    generate_ohlc_from_trades(start_date)
-    save_ohlc_from_cg(start_date)
+    generate_ohlc()
