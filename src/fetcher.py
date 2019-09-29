@@ -178,7 +178,7 @@ class PaginatedRequest:
         if until_field:
             self.until_name, self.until_value = list(until_field.items())[0]
 
-        self.items = []
+        # self.items = []
         self.fetched = False
 
         self._last_response_hash = None
@@ -199,7 +199,7 @@ class PaginatedRequest:
                 break
 
             items = self._preprocess_and_filter(items)
-            self.items.extend(items)
+            # self.items.extend(items)
 
             yield items
 
@@ -281,16 +281,23 @@ def fetch_balances(address):
     bnb_api = BinanceAPI()
     balances = bnb_api.get_balance(address)
 
-    max_seqnr = db.session.query(
-        func.max(Balance.seqnr)).filter(Balance.address == address).scalar()
-    if not max_seqnr:
-        max_seqnr = 1
-    else:
-        max_seqnr += 1
+    # For now save just last fetched balances
+    # max_seqnr = db.session.query(
+    #     func.max(Balance.seqnr)).filter(Balance.address == address).scalar()
+    # if not max_seqnr:
+    #     max_seqnr = 1
+    # else:
+    #     max_seqnr += 1
+
+    # for now just delete all balances and store only current balances
+    old_balances = db.session.query(Balance).filter(Balance.address == address)
+    if old_balances:
+        db.session.execute(Balance.__table__.delete().where(Balance.address == address))
+        db.session.commit()
 
     for b in balances:
         b.address = address
-        b.seqnr = max_seqnr
+        # b.seqnr = max_seqnr
 
     _save_items(balances)
 
@@ -381,5 +388,5 @@ def _save_items(items_list):
 
 if __name__ == '__main__':
     # fetch_tokens()
-    fetch_trades()
-    # fetch_balances('bnb1xlvns0n2mxh77mzaspn2hgav4rr4m8eerfju38')
+    # fetch_trades()
+    fetch_balances('bnb1xlvns0n2mxh77mzaspn2hgav4rr4m8eerfju38')
