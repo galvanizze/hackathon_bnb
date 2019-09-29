@@ -52,8 +52,8 @@ def load_trades(addresses, quote_asset, **kwargs):
     fee = db.alias(OHLC)
     trades = db.session.query(
             Trade,
-            fee.columns.close,
-            target.columns.close
+            fee.columns.close.label('fee_price'),
+            target.columns.close.label('target_price')
         ).\
         filter(*filters).\
         join(fee, db.and_(
