@@ -9,8 +9,8 @@ from src.decimal_convert import decimal_to_float
 
 class TradeCalculator:
 
-    def __init__(self, trades_query, addresses):
-        self.trades_query = trades_query
+    def __init__(self, addresses, qoute_currency):
+        self.trades_query = load_trades(addresses, qoute_currency)
         self.addresses = addresses
 
     def sort_all(self):
