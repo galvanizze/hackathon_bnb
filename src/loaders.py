@@ -2,6 +2,7 @@ from sqlalchemy import func
 
 from src.db_init import db
 from src.models import Trade, Tx, Balance, OHLC
+from datetime import datetime
 
 def get_filters(addresses=None, **kwargs):
     """Loads trades for given filters. Returns session query.
@@ -52,13 +53,21 @@ def load_trades(addresses, quote_asset, **kwargs):
     target = db.alias(OHLC)
     fee = db.alias(OHLC)
     trades = db.session.query(
-            Trade,
+            Trade.base_asset.label('base_asset'),
+            Trade.quote_asset.label('quote_asset'),
+            Trade.quantity.label('quantity'),
+            Trade.price.label('price'),
+            db.func.date(Trade.date).label('date'),
+            Trade.buy_single_fee_asset.label('buy_single_fee_asset'),
             fee.columns.close.label('fee_price'),
-            target.columns.close.label('target_price')
+            target.columns.close.label('target_price'),
+            (Trade.buy_single_fee*fee.columns.close).label('buy_fee'),
+            (Trade.price*Trade.quantity).label('volume')
         ).\
         filter(*filters).\
         join(fee, db.and_(
             Trade.buy_single_fee_asset == fee.columns.base_asset,
+            quote_asset == fee.columns.quote_asset,
             db.func.date(Trade.date) == db.func.date(fee.columns.date),
         )).\
         join(target, db.and_(
