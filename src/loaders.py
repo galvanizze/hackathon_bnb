@@ -1,5 +1,5 @@
 from src.db_init import db
-from src.models import Trade, Tx, Balance, OHLC
+from src.models import Trade, Tx, Balance, OHLC, Token
 
 
 def get_filters(addresses=None, **kwargs):
@@ -79,14 +79,17 @@ def load_balances(addresses, target_asset):
         filter.append(Balance.address == addresses[0])
 
     target = db.alias(OHLC)
+    token = db.alias(Token)
 
     balances = db.session.query(
         Balance.symbol.label('symbol'),
         Balance.address.label('address'),
         Balance.amount.label('amount'),
+        token.columns.name.label('token_name'),
         target.columns.quote_asset.label('target'),
         (db.func.count(Balance.amount) * target.columns.close).label('price')
     ). \
+        join(token, Balance.symbol == token.columns.symbol). \
         join(target, db.and_(
         Balance.symbol == target.columns.base_asset,
         db.func.date(Balance.date) == db.func.date(target.columns.date)
@@ -96,6 +99,7 @@ def load_balances(addresses, target_asset):
         Balance.symbol,
         Balance.address,
         Balance.amount,
+        token.columns.name,
         target.columns.close,
         target.columns.quote_asset
     )
