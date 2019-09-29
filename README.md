@@ -30,22 +30,22 @@ Built by Devmons - team behind Crypkit.com.
 
 Technologies used:
 
-DB: PostgreSQL
-backend: python, flask
-frontend: vue.js
+- DB: PostgreSQL
+- backend: python, flask
+- frontend: vue.js
 
 Data sources:
 
-Binance Chain lightnode: https://docs.binance.org/light-client.html
-HTTP API: https://docs.binance.org/api-reference/dex-api/paths.html
-Price calculations BNB vs EUR, USD, BTC, ETH: www.coingecko.com
+- Binance Chain lightnode: https://docs.binance.org/light-client.html
+- HTTP API: https://docs.binance.org/api-reference/dex-api/paths.html
+- Price feeds BNB vs EUR, USD, BTC, ETH: www.coingecko.com
 
 Contact us:
 
 e-mail: info@crypkit.com
 www.crypkit.com
 
-github hackathon: https://github.com/galvanizze/hackathon_bnb 
-github blockAPI: https://github.com/crypkit/blockapi 
-website (soon): www.binancedexplore.com  
+- github hackathon: https://github.com/galvanizze/hackathon_bnb 
+- github blockAPI: https://github.com/crypkit/blockapi 
+- website (soon): www.binancedexplore.com  
 
