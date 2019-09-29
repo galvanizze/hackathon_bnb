@@ -66,7 +66,6 @@ def load_trades(addresses, quote_asset, **kwargs):
             db.func.date(Trade.date) == db.func.date(target.columns.date),
         ))
 
-    print(trades[0])
     return trades
 
 def group_by_date(addresses, **kwargs):
