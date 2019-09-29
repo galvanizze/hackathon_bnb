@@ -3,7 +3,8 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 
 from src.db_init import db
-from src.loaders import load_trades
+from src.loaders import load_trades, load_balances
+from src.fetcher import fetch_balances
 from src.models import Trade
 from src.decimal_convert import decimal_to_float
 
@@ -96,11 +97,11 @@ class TradeCalculator:
 
         return decimal_to_float({'cost': cost, 'quantity': quantity})
 
-# class AggregatedData:
-#
-#     def __init__(self):
-#         self.trades_query = load_trades(None, 'USD')
-#
-#     def aggregate(self):
-#         total_txs = self.trades_query.count()
-#         fees = self.trades_query.
+
+def get_address_data(addresses, base_symbol):
+    for addr in addresses:
+        fetch_balances(addr)
+
+    balances = load_balances(addresses, base_symbol).all()
+    total_balance = sum(b.price for b in balances)
+    return balances, total_balance

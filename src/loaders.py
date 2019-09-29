@@ -1,5 +1,3 @@
-from sqlalchemy import func
-
 from src.db_init import db
 from src.models import Trade, Tx, Balance, OHLC
 from datetime import datetime
@@ -47,6 +45,7 @@ def get_filters(addresses=None, **kwargs):
 
     return filters
 
+
 def load_trades(addresses, quote_asset, **kwargs):
     filters = get_filters(addresses, **kwargs)
 
@@ -71,27 +70,47 @@ def load_trades(addresses, quote_asset, **kwargs):
             db.func.date(Trade.date) == db.func.date(fee.columns.date),
         )).\
         join(target, db.and_(
-            Trade.quote_asset == target.columns.base_asset,
-            quote_asset == target.columns.quote_asset,
-            db.func.date(Trade.date) == db.func.date(target.columns.date),
-        ))
+        Trade.quote_asset == target.columns.base_asset,
+        quote_asset == target.columns.quote_asset,
+        db.func.date(Trade.date) == db.func.date(target.columns.date),
+    ))
 
     return trades
 
 
-def load_balances(addresses):
-    addr_filter = []
+def load_balances(addresses, target_asset):
+    filter = []
 
     if len(addresses) > 1:
-        addr_filter.append(Balance.address.in_(addresses))
+        filter.append(Balance.address.in_(addresses))
     else:
-        addr_filter.append(Balance.address == addresses[0])
+        filter.append(Balance.address == addresses[0])
 
-    balances = db.session.\
-        query(Balance.symbol, func.count(Balance.amount)).\
-        group_by(Balance.symbol).\
-        filter(*addr_filter).\
-        all()
+    target = db.alias(OHLC)
+    token = db.alias(Token)
+
+    balances = db.session.query(
+        Balance.symbol.label('symbol'),
+        Balance.address.label('address'),
+        Balance.amount.label('amount'),
+        token.columns.name.label('token_name'),
+        target.columns.quote_asset.label('target'),
+        (db.func.count(Balance.amount) * target.columns.close).label('price')
+    ). \
+        join(token, Balance.symbol == token.columns.symbol). \
+        join(target, db.and_(
+        Balance.symbol == target.columns.base_asset,
+        db.func.date(Balance.date) == db.func.date(target.columns.date)
+    )). \
+        filter(*(filter + [target.columns.quote_asset == target_asset])). \
+        group_by(
+        Balance.symbol,
+        Balance.address,
+        Balance.amount,
+        token.columns.name,
+        target.columns.close,
+        target.columns.quote_asset
+    )
 
     return balances
 
@@ -99,14 +118,14 @@ def load_balances(addresses):
 def group_by_date(addresses, **kwargs):
     filters = get_filters(addresses, **kwargs)
 
-    trades = db.session.\
+    trades = db.session. \
         query(
-            db.func.count(Trade.id),
-            db.func.max(db.func.date(Trade.date),
-            db.func.sum(Trade.quantity),
-            db.func.sum(Trade.quantity*Trade.price)
-        )).\
-        filter(*filters).\
+        db.func.count(Trade.id),
+        db.func.max(db.func.date(Trade.date),
+                    db.func.sum(Trade.quantity),
+                    db.func.sum(Trade.quantity * Trade.price)
+                    )). \
+        filter(*filters). \
         group_by(db.func.date(Trade.date), Trade.base_asset)
 
     return trades
