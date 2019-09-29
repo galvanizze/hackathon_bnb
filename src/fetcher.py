@@ -1,4 +1,5 @@
-from src.models import Tx, Trade, Token, Market, db
+from sqlalchemy import func
+from src.models import Tx, Trade, Token, Market, Balance, db
 
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -24,12 +25,26 @@ class BinanceAPI(Service):
     page_offset_step = 1
 
     supported_requests = {
+        'get_balance': '/account/{address}',
         'get_txs': '/transactions?address={address}&startTime={start_time}&endTime={end_time}'
                    '&offset={offset}&limit={limit}',
         'get_trades': '/trades?start={start_time}&end={end_time}&offset={offset}&limit={limit}',
         'get_tokens': '/tokens?offset={offset}&limit={limit}',
         'get_markets': '/markets?offset={offset}&limit={limit}'
     }
+
+    def get_balance(self, address):
+        response = self.request('get_balance', address=address)
+        if not response:
+            return []
+
+        try:
+            return [Balance(
+                symbol=bal['symbol'],
+                amount=Decimal(bal['free'])
+            ) for bal in response['balances']]
+        except ValueError:
+            return 0
 
     @set_default_args_values
     def get_txs(self, address, start_time, end_time, offset=None, limit=None):
@@ -262,21 +277,39 @@ class PaginatedRequest:
         return items
 
 
-def fetch_txs():
+def fetch_balances(address):
+    bnb_api = BinanceAPI()
+    balances = bnb_api.get_balance(address)
+
+    max_seqnr = db.session.query(
+        func.max(Balance.seqnr)).filter(Balance.address == address).scalar()
+    if not max_seqnr:
+        max_seqnr = 1
+    else:
+        max_seqnr += 1
+
+    for b in balances:
+        b.address = address
+        b.seqnr = max_seqnr
+
+    _save_items(balances)
+
+
+def fetch_txs(address):
     newest = db.session.query(Tx).order_by(Tx.date.desc()).first()
     until_field = {'tx_hash': newest.tx_hash} if newest else {}
     date = newest.date if newest else None
-    _fetch_new_items('get_txs', date, until_field)
+    _fetch_new_items('get_txs', date, until_field, address)
 
 
-def fetch_trades():
+def fetch_trades(address=None):
     newest = db.session.query(Trade).order_by(Trade.date.desc()).first()
     until_field = {'trade_id': newest.trade_id} if newest else {}
     date = newest.date if newest else None
-    _fetch_new_items('get_trades', date, until_field)
+    _fetch_new_items('get_trades', date, until_field, address)
 
 
-def _fetch_new_items(method, since_date, until_field=None):
+def _fetch_new_items(method, since_date, until_field=None, address=None):
     # use date from last record, or set date of first tx in dex bnb exchange
     if since_date:
         since_date = since_date.replace(tzinfo=pytz.UTC)
@@ -292,6 +325,13 @@ def _fetch_new_items(method, since_date, until_field=None):
     # max window for data is 3 months
     until_ts = int((since_date + relativedelta(months=3)).timestamp() * 1000)
 
+    method_kwargs = {
+        'start_time': since_ts,
+        'end_time': until_ts
+    }
+    if address:
+        method_kwargs.update({'address': address})
+
     bnb_api = BinanceAPI()
     paginated_request = PaginatedRequest(
         bnb_api,
@@ -300,8 +340,7 @@ def _fetch_new_items(method, since_date, until_field=None):
         # they are used in api calling, see below
         until_field=until_field,
         # args for calling api method
-        start_time=since_ts,
-        end_time=until_ts
+        **method_kwargs
     )
 
     # from multiprocessing import Pool
@@ -336,10 +375,11 @@ def fetch_tokens():
 
 
 def _save_items(items_list):
-    print('saving items')
     db.session.add_all(items_list)
     db.session.commit()
 
 
 if __name__ == '__main__':
-    fetch_tokens()
+    # fetch_tokens()
+    fetch_trades()
+    # fetch_balances('bnb1xlvns0n2mxh77mzaspn2hgav4rr4m8eerfju38')
