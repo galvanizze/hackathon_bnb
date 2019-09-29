@@ -26,7 +26,7 @@ class BinanceAPI(Service):
     supported_requests = {
         'get_txs': '/transactions?address={address}&startTime={start_time}&endTime={end_time}'
                    '&offset={offset}&limit={limit}',
-        'get_trades': '/trades?startTime={start_time}&endTime={end_time}&offset={offset}&limit={limit}',
+        'get_trades': '/trades?start={start_time}&end={end_time}&offset={offset}&limit={limit}',
         'get_tokens': '/tokens?offset={offset}&limit={limit}',
         'get_markets': '/markets?offset={offset}&limit={limit}'
     }
@@ -175,7 +175,7 @@ class PaginatedRequest:
 
         self._stop_fetching = False
         while True:
-            print('processing items in {} round'.format(self.offset + 1))
+            # print('processing items in {} round'.format(self.offset + 1))
 
             items = getattr(self.api, self.method)(
                 offset=self.offset, **self.method_kwargs
@@ -191,7 +191,10 @@ class PaginatedRequest:
             if self._stop_fetching:
                 break
 
-            self.offset += self.api.page_offset_step
+            # self.offset += self.api.page_offset_step
+
+            if items:
+                self.method_kwargs['end_time'] = int(items[-1].date.timestamp()) * 1000
 
         self.fetched = True
 
@@ -261,29 +264,32 @@ class PaginatedRequest:
 
 def fetch_txs():
     newest = db.session.query(Tx).order_by(Tx.date.desc()).first()
-    until_field = {'tx_hash': newest.tx_hash}
-    _fetch_new_items('get_txs', newest.date, until_field)
+    until_field = {'tx_hash': newest.tx_hash} if newest else {}
+    date = newest.date if newest else None
+    _fetch_new_items('get_txs', date, until_field)
 
 
 def fetch_trades():
     newest = db.session.query(Trade).order_by(Trade.date.desc()).first()
-    until_field = {'trade_id': newest.trade_id}
-    _fetch_new_items('get_trades', newest.date, until_field)
+    until_field = {'trade_id': newest.trade_id} if newest else {}
+    date = newest.date if newest else None
+    _fetch_new_items('get_trades', date, until_field)
 
 
 def _fetch_new_items(method, since_date, until_field=None):
     # use date from last record, or set date of first tx in dex bnb exchange
     if since_date:
-        since_ts = int(since_date.timestamp())
+        since_ts = int(since_date.timestamp() * 1000)
     else:
-        since_ts = int(datetime(2019, 8, 22, tzinfo=pytz.utc).timestamp())
+        since_date = datetime(2019, 8, 22, tzinfo=pytz.utc)
+        since_ts = int(since_date.timestamp() * 1000)
 
     if not until_field:
         until_field = {}
 
     # TODO This will not work after 22.11., call paginated request in cycle
     # max window for data is 3 months
-    until_ts = int((since_date + relativedelta(months=3)).timestamp())
+    until_ts = int((since_date + relativedelta(months=3)).timestamp() * 1000)
 
     bnb_api = BinanceAPI()
     paginated_request = PaginatedRequest(
