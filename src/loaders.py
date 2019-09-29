@@ -112,7 +112,17 @@ def load_balances(addresses, target_asset):
         target.columns.quote_asset
     )
 
-    return balances
+    _balances = []
+    for b in balances:
+        _balances.append({
+            'symbol': b.symbol,
+            'address': b.address,
+            'amount': float(b.amount),
+            'token_name': b.token_name,
+            'target': b.target,
+            'price': float(b.price)
+        })
+    return _balances
 
 
 def group_by_date(addresses, **kwargs):
