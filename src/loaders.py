@@ -1,5 +1,5 @@
 from src.db_init import db
-from src.models import Trade, Tx, Balance, OHLC
+from src.models import Trade, Tx, Balance, OHLC, Token
 from datetime import datetime
 
 def get_filters(addresses=None, **kwargs):
