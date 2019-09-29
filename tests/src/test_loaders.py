@@ -17,7 +17,7 @@ class TestLoader:
     def test_load_trades(self, capsys):
         self.set_up()
 
-        trades = load_trades(self.test_addresses)
+        trades = load_trades(self.test_addresses, 'USD')
 
         if trades.count() == 0:
             assert "Error in loading address trades"

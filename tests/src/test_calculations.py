@@ -10,7 +10,7 @@ class TestTradeCalculator:
     def set_up(self):
         # TODO injection
         test_addresses = ['bnb1eff4hzx4lfsun3px5walchdy4vek4n0njcdzyn']
-        trades = load_trades(test_addresses)
+        trades = load_trades(test_addresses, 'USD')
         self.trade_calculator = TradeCalculator(trades, test_addresses)
 
     def clean_up(self):
@@ -18,8 +18,9 @@ class TestTradeCalculator:
         pass
 
     def test_sort_all(self, capsys):
-        self.set_up()
+        with capsys.disabled():
+            self.set_up()
 
         with capsys.disabled():
-            print(len(self.trade_calculator.trades))
             print(self.trade_calculator.sort_all())
+            print(self.trade_calculator.sort_by_date())
