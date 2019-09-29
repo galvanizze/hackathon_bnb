@@ -70,3 +70,16 @@ class Market(db.Model):
     list_price = db.Column(db.DECIMAL())
     tick_size = db.Column(db.DECIMAL())
     lot_size = db.Column(db.DECIMAL())
+
+
+class OHLC(db.Model):
+    __tablename__ = "ohlc"
+    id = db.Column(db.Integer(), primary_key=True)
+    base_asset = db.Column(db.String(64))
+    quote_asset = db.Column(db.String(64))
+    date = db.Column(db.DateTime(), index=True)
+    open = db.Column(db.DECIMAL())
+    high = db.Column(db.DECIMAL())
+    low = db.Column(db.DECIMAL())
+    close = db.Column(db.DECIMAL())
+

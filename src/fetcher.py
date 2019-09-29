@@ -279,6 +279,7 @@ def fetch_trades():
 def _fetch_new_items(method, since_date, until_field=None):
     # use date from last record, or set date of first tx in dex bnb exchange
     if since_date:
+        since_date = since_date.replace(tzinfo=pytz.UTC)
         since_ts = int(since_date.timestamp() * 1000)
     else:
         since_date = datetime(2019, 8, 22, tzinfo=pytz.utc)
@@ -316,24 +317,22 @@ def _fetch_new_items(method, since_date, until_field=None):
 
 def fetch_tokens():
     bnb_api = BinanceAPI()
-    paginated_request = PaginatedRequest(bnb_api, 'get_tokens')
-
-    for items_list in paginated_request.fetch():
-        db.session.add_all(items_list)
+    tokens = bnb_api.get_tokens()
+    db.session.add_all(tokens)
 
     Token.query.delete()
     db.session.commit()
 
 
-def fetch_markets():
-    bnb_api = BinanceAPI()
-    paginated_request = PaginatedRequest(bnb_api, 'get_markets')
-
-    for items_list in paginated_request.fetch():
-        db.session.add_all(items_list)
-
-    Market.query.delete()
-    db.session.commit()
+# def fetch_markets():
+#     bnb_api = BinanceAPI()
+#     paginated_request = PaginatedRequest(bnb_api, 'get_markets')
+#
+#     for items_list in paginated_request.fetch():
+#         db.session.add_all(items_list)
+#
+#     Market.query.delete()
+#     db.session.commit()
 
 
 def _save_items(items_list):
@@ -343,4 +342,4 @@ def _save_items(items_list):
 
 
 if __name__ == '__main__':
-    fetch_trades()
+    fetch_tokens()
