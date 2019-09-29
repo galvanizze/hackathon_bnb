@@ -4,8 +4,7 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS, cross_origin
 
-from src.calculations import TradeCalculator
-from src.dump.dump_data import *
+from src.calculations import TradeCalculator, get_address_data
 
 app = Flask(__name__)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
@@ -35,23 +34,30 @@ def index():
 @cross_origin(origin='*')
 def sort_all():
     data = request.data
-    trades = data_sort_all
-    # c = TradeCalculator(['bnb14cwvpg9u9vunnnqcslz4r766pacg30rle36zlt',
-    #     'bnb1xazt0qc6h29nvr9sksyfdvtc87vg6vcp3hz72n',
-    #     'bnb1pryxsu30ausk3ypywqjrl56r8fnhy84yxmpaxf'], 'USD')
-    # trades = c.sort_all()
+    c = TradeCalculator(['bnb14cwvpg9u9vunnnqcslz4r766pacg30rle36zlt',
+        'bnb1xazt0qc6h29nvr9sksyfdvtc87vg6vcp3hz72n',
+        'bnb1pryxsu30ausk3ypywqjrl56r8fnhy84yxmpaxf'], 'USD')
+    trades = c.sort_all()
     return jsonify(trades)
 
 @app.route('/addresses/sort_by_date', methods=['GET', 'POST'])
 @cross_origin(origin='*')
 def sort_by_date():
     data = request.data
-    # c = TradeCalculator(['bnb14cwvpg9u9vunnnqcslz4r766pacg30rle36zlt',
-    #     'bnb1xazt0qc6h29nvr9sksyfdvtc87vg6vcp3hz72n',
-    #     'bnb1pryxsu30ausk3ypywqjrl56r8fnhy84yxmpaxf'], 'USD')
-    # trades = c.sort_by_date()
-    trades = data_sort_by_type
+    c = TradeCalculator(['bnb14cwvpg9u9vunnnqcslz4r766pacg30rle36zlt',
+        'bnb1xazt0qc6h29nvr9sksyfdvtc87vg6vcp3hz72n',
+        'bnb1pryxsu30ausk3ypywqjrl56r8fnhy84yxmpaxf'], 'USD')
+    trades = c.sort_by_date()
     return jsonify(trades)
+
+@app.route('/addresses/balances', methods=['GET', 'POST'])
+@cross_origin(origin='*')
+def get_balances():
+    balances = get_address_data(['bnb14cwvpg9u9vunnnqcslz4r766pacg30rle36zlt',
+        'bnb1xazt0qc6h29nvr9sksyfdvtc87vg6vcp3hz72n',
+        'bnb1pryxsu30ausk3ypywqjrl56r8fnhy84yxmpaxf'], 'USD')
+
+    return jsonify(decimal_to_float(balances[0]))
 
 def messageReceived(methods=['GET', 'POST']):
     print('message was received!!!')
