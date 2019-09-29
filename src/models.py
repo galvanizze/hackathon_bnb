@@ -83,3 +83,11 @@ class OHLC(db.Model):
     low = db.Column(db.DECIMAL())
     close = db.Column(db.DECIMAL())
 
+
+class Balance(db.Model):
+    __tablename__ = "balances"
+    id = db.Column(db.Integer(), primary_key=True)
+    seqnr = db.Column(db.Integer)
+    address = db.Column(db.String(64), index=True)
+    symbol = db.Column(db.String(64))
+    amount = db.Column(db.DECIMAL())

@@ -1,5 +1,5 @@
 from src.db_init import db
-from src.models import Trade, Tx, Token, Market, OHLC
+from src.models import Trade, Tx, Token, Market, OHLC, Balance
 
 
 def reset_tables():
@@ -18,6 +18,9 @@ def reset_tables():
     OHLC.__table__.drop(db.engine)
     OHLC.__table__.create(db.engine)
 
+    Balance.__table__.drop(db.engine)
+    Balance.__table__.create(db.engine)
+
 
 if __name__ == '__main__':
-    OHLC.__table__.create(db.engine)
+    Balance.__table__.create(db.engine)
