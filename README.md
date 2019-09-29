@@ -28,7 +28,22 @@ Who will use DEXPLORE ?
 This project came to life on Hack To The Moon hackathon in Prague, organized by Binance_X and Rockaway Blockchain.
 Built by Devmons - team behind Crypkit.com.
 
+Technologies used:
+
+DB: PostgreSQL
+backend: python, flask
+frontend: vue.js
+
+Data sources:
+
+Binance Chain lightnode: https://docs.binance.org/light-client.html
+HTTP API: https://docs.binance.org/api-reference/dex-api/paths.html
+Price calculations BNB vs EUR, USD, BTC, ETH: www.coingecko.com
+
+Contact us:
+
 e-mail: info@crypkit.com
+www.crypkit.com
 
 github hackathon: https://github.com/galvanizze/hackathon_bnb 
 github blockAPI: https://github.com/crypkit/blockapi 
