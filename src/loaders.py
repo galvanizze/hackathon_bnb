@@ -1,6 +1,7 @@
+from sqlalchemy import func
 
 from src.db_init import db
-from src.models import Trade, OHLC
+from src.models import Trade, Tx, Balance, OHLC
 
 def get_filters(addresses=None, **kwargs):
     """Loads trades for given filters. Returns session query.
@@ -67,6 +68,24 @@ def load_trades(addresses, quote_asset, **kwargs):
         ))
 
     return trades
+
+
+def load_balances(addresses):
+    addr_filter = []
+
+    if len(addresses) > 1:
+        addr_filter.append(Balance.address.in_(addresses))
+    else:
+        addr_filter.append(Balance.address == addresses[0])
+
+    balances = db.session.\
+        query(Balance.symbol, func.count(Balance.amount)).\
+        group_by(Balance.symbol).\
+        filter(*addr_filter).\
+        all()
+
+    return balances
+
 
 def group_by_date(addresses, **kwargs):
     filters = get_filters(addresses, **kwargs)
