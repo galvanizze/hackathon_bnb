@@ -10,8 +10,7 @@ class TestTradeCalculator:
     def set_up(self):
         # TODO injection
         test_addresses = ['bnb1eff4hzx4lfsun3px5walchdy4vek4n0njcdzyn']
-        trades = load_trades(test_addresses, 'USD')
-        self.trade_calculator = TradeCalculator(trades, test_addresses)
+        self.trade_calculator = TradeCalculator(test_addresses, 'USD')
 
     def clean_up(self):
         # TODO delete injected records

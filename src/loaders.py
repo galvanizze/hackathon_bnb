@@ -82,9 +82,3 @@ def group_by_date(addresses, **kwargs):
         group_by(db.func.date(Trade.date), Trade.base_asset)
 
     return trades
-
-# def load_ohlc(currencies, quote_asset):
-#
-#     if isinstance(currencies, str) or len(currencies) == 1:
-#         ohlcs = db.session(OHLC).\
-#             filter()
