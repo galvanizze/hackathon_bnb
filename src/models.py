@@ -91,3 +91,5 @@ class Balance(db.Model):
     address = db.Column(db.String(64), index=True)
     symbol = db.Column(db.String(64))
     amount = db.Column(db.DECIMAL())
+    date = db.Column(db.DateTime(), index=True)
+

@@ -1,4 +1,3 @@
-from sqlalchemy import func
 from src.models import Tx, Trade, Token, Market, Balance, db
 
 from datetime import datetime
@@ -297,6 +296,7 @@ def fetch_balances(address):
 
     for b in balances:
         b.address = address
+        b.date = datetime.utcnow()
         # b.seqnr = max_seqnr
 
     _save_items(balances)
@@ -388,5 +388,5 @@ def _save_items(items_list):
 
 if __name__ == '__main__':
     # fetch_tokens()
-    # fetch_trades()
-    fetch_balances('bnb1xlvns0n2mxh77mzaspn2hgav4rr4m8eerfju38')
+    fetch_trades()
+    # fetch_balances('bnb1xlvns0n2mxh77mzaspn2hgav4rr4m8eerfju38')

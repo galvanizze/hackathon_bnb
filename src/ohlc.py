@@ -15,6 +15,7 @@ def generate_ohlc():
 
     # first get coingecko data
     cg_ohlc = save_ohlc_from_cg(start_date)
+    # TODO for some pairs there are no trades in some days, they have to be filled postpone
     generate_ohlc_from_trades(start_date, cg_ohlc)
 
 
